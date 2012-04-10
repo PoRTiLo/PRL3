@@ -1,13 +1,15 @@
 /**
- *       @file  ca.cpp
- *      @brief  TODO
+ *       @file  ca.c
+ *      @brief  Pomoci knihovny Open MPI je implementovan celularni automat, který vyuziva
+ *      paralelniho prostredi pro urychleni vypoctu. Celularni automat implementuje 
+ *      pravidla hry Game of life.
  *
  * Detailed description starts here.
  *
  *     @author  Bc. Jaroslav Sendler (xsendl00), xsendl00@stud.fit.vutbr.cz
  *
  *   @internal
- *     Created  04/09/2012
+ *     Created  04/11/2012
  *     Company  FIT-VUT, Brno
  *   Copyright  Copyright (c) 2012, Bc. Jaroslav Sendler
  *
@@ -19,34 +21,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 
 
 #define TAG 0
-#define DEAD 48
-#define LIVE 49
+#define DEAD 48                                                   /* nula v ASCII hodnote */
+#define LIVE 49                                                   /* jednicka v ASCII hodnote */
 
 /**
  * @brief   Zmena stavu bunky. Plati nasledujici pravidla:
  * Kazda ziva bunka s mene nez dvema zivymi sousedy umira. 
  * Kazda ziva bunka se dvema nebo tremi zivymi sousedy zustava zit. 
  * Kazda ziva bunka s vice nez tremi zivymi sousedy umira. 
- * Kazda mrtva bunka s przve tremi zivymi sousedy oziva.
+ * Kazda mrtva bunka s prave tremi zivymi sousedy oziva.
  * @param   cell aktualni stav bunky
  * @param   live pocet zivych okolnich bunek
  * @return  vysledny stav bunky
  */
 char liveDead(char cell, int live) {
    if(cell == LIVE) {                                             /* bunka je ziva */
-      if(live < 2 && live > 3) {                                  /* v okoli je vice jak 3 zive bunky nebo mene nez 2 */
+      if(live < 2 || live > 3) {                                  /* v okoli je vice jak 3 zive bunky nebo mene nez 2 */
          cell = DEAD;                                             /* bunka umira */
       }
-      printf("LIVE %c\n", cell);
    }
    else {                                                         /* mrtva bunka */
-      if(live == 2) {                                             /* v okoli jsou tri zive bunky */
+      if(live == 3) {                                             /* v okoli jsou tri zive bunky */
          cell = LIVE;                                             /* bunka oziva */
       }
-      printf("DEAD %c\n", cell);
    }
    return cell;
 }
@@ -123,7 +124,7 @@ int main(int argc, char *argv[]) {
       if(myid != lastId) {
          rowDown[i] = '\0';
       }
-      else if (myid != 0) {
+      if (myid != 0) {
          rowUp[i] = '\0';
       }
    }
@@ -139,14 +140,13 @@ int main(int argc, char *argv[]) {
 
    /* Cteni dat - cte se jen jeden radek */
    result = fread(row, 1, column, file);
-   if(result != sizeof(row)) {
-      printf("CHYBA: Nepovedlo se nacist cely radek ze souboru.");
+   if(result != column) {
+      perror("CHYBA: Nepovedlo se nacist cely radek ze souboru.");
       fclose(file);
       free(file);
       MPI_Finalize();
       return -1;
    }
-   printf("(%d):%s\n", myid, row);
 
    /* Algortimus hry Game Of Life */
    int actStep;                                                   /* aktualni krok algoritmu */
@@ -155,7 +155,9 @@ int main(int argc, char *argv[]) {
    for(actStep = 0; actStep < step; actStep++) {                  /* provadim tolik kroku, kolik bylo zadano na vstupu */
       if(myid == 0) {                                             /* prvni radek, rozhoduje se jen podle spodniho */
          MPI_Send(row, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD);              /* posilam pole dolu */
+        // printf("id(%d)->(%d):%s\n", myid, myid+1, row);
          MPI_Recv(rowDown, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD, &stat);   /* prijimam pole ze spodu */
+        // printf("id(%d)<-(%d):%s\n", myid, myid+1, rowDown);
          /* reseni pro prvni bunku, prvniho radku*/
          if(row[1] == LIVE) live++;                               /* prava bunak je ziva */
          if(rowDown[1] == LIVE) live++;                           /* prava spodni bunka je ziva */
@@ -177,13 +179,12 @@ int main(int argc, char *argv[]) {
          if(rowDown[column-2] == LIVE) live++;                    /* leva spodni bunka je ziva */
          if(rowDown[column-1] == LIVE) live++;                    /* spodni bunka je ziva */
          rowNew[column-1] = liveDead(row[column-1], live);        /* vypocet neveho stavu bunky */
-         live = 0;
       }
       else if(myid == lastId) {                                 /* posledni radek, roshoduje se jen podle predchoziho */
-         MPI_Send(row, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD);              /* posilam pole dolu */
          MPI_Send(row, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD);              /* posilam pole nahoru */
-         MPI_Recv(rowDown, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD, &stat);   /* prijimam pole ze spodu */
+        // printf("id(%d)->(%d):%s\n", myid, myid-1, row);
          MPI_Recv(rowUp, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD, &stat);     /* prijimam pole z vrchu */
+        // printf("id(%d)<-(%d):%s\n", myid, myid-1, rowUp);
          /* reseni pro prvni bunku, prvniho radku*/
          if(row[1] == LIVE) live++;                               /* prava bunak je ziva */
          if(rowUp[1] == LIVE) live++;                             /* prava vrchni bunka je ziva */
@@ -205,11 +206,16 @@ int main(int argc, char *argv[]) {
          if(rowUp[column-2] == LIVE) live++;                      /* leva vrchni bunka je ziva */
          if(rowUp[column-1] == LIVE) live++;                      /* vrchni bunka je ziva */
          rowNew[column-1] = liveDead(row[column-1], live);        /* vypocet neveho stavu bunky */
-         live = 0;
       }
       else {                                                      /* zbyle radky, maji vrchniho i spodniho souseda */
+         MPI_Send(row, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD);              /* posilam pole dolu */
+        // printf("id(%d)->(%d):%s\n", myid, myid+1, row);
          MPI_Send(row, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD);              /* posilam pole nahoru */
+        // printf("id(%d)->(%d):%s\n", myid, myid-1, row);
+         MPI_Recv(rowUp, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD, &stat);     /* prijimam pole ze spodu */
+        // printf("id(%d)<-(%d):%s\n", myid, myid+1, rowUp);
          MPI_Recv(rowDown, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD, &stat);   /* prijimam pole z vrchu */
+        // printf("id(%d)<-(%d):%s\n", myid, myid-1, rowDown);
          /* prvni bunka - jen prave 5 okoli */
          if(rowUp[0] == LIVE) live++;                             /* vrchni bunka je ziva */
          if(rowUp[1] == LIVE) live++;                             /* prava vrchni bunak je ziva */
@@ -238,9 +244,13 @@ int main(int argc, char *argv[]) {
          if(rowDown[column-2] == LIVE) live++;                    /* leva spodni bunka je ziva */
          if(rowDown[column-1] == LIVE) live++;                    /* spodni bunka je ziva */
          rowNew[column-1] = liveDead(row[column-1], live);        /* vypocet neveho stavu bunky */
-         live = 0;
-      }
+      } 
+      live = 0;
+      memcpy(row, rowNew, column);
    }
+
+   /* Tisk hodnot po danem kroku na vystup */
+   printf("%d:%s\n", myid, row);
 
    /* uklizeni po sobe */
    free(row);                                                     /* uvolenni dynamicke pameti */
@@ -248,7 +258,7 @@ int main(int argc, char *argv[]) {
    if(myid != 0) {
       free(rowUp);                                                /* uvolenni dynamicke pameti */
    }
-   if(myid != numprocs) {
+   if(myid != lastId) {
       free(rowDown);                                              /* uvolenni dynamicke pameti */
    }
    if(fclose(file) == EOF) {                                      /* uzavreni souboru */
