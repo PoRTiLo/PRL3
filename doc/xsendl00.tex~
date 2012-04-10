@@ -1,0 +1,163 @@
+\documentclass[a4paper, 10pt]{article}[5.10.2011]
+
+%% packages
+\usepackage[left=2cm, text={17cm, 24cm}, top=3cm]{geometry}		% rozmery stránky
+\usepackage[czech]{babel}
+\usepackage[latin2]{inputenc}
+\usepackage[IL2]{fontenc}
+\usepackage{colortbl}
+\usepackage{graphicx}
+\newcommand{\czuv}[1]{\quotedblbase #1\textquotedblleft}
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+
+
+% =======================================================================
+% balíèek "hyperref" vytváøí klikací odkazy v pdf, pokud tedy pou¾ijeme pdflatex
+% problém je, ¾e balíèek hyperref musí být uveden jako poslední, tak¾e nemù¾e
+% být v ¹ablonì
+
+  \usepackage{color}
+  \usepackage[unicode,colorlinks,hyperindex,plainpages=false,pdftex]{hyperref}
+  \definecolor{links}{rgb}{0.4,0.5,0}
+  \definecolor{anchors}{rgb}{1,0,0}
+  \def\AnchorColor{anchors}
+  \def\LinkColor{links}
+  \def\pdfBorderAttrs{/Border [0 0 0] }  % bez okrajù kolem odkazù
+  \pdfcompresslevel=9
+
+\title{Paralelní a distribuované algoritmy\,--\,dokumentace \\Paralelní celulární automat}
+\author{Bc. Jaroslav Sendler, xsendl00\\ xsendl00@stud.fit.vutbr.cz}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent Dokumentace k 2.projektu do pøedmìtu Paralelní a distribuované algoritmy (PRL). Obsahuje popis zadání, rozbor a analýzu Paralelního celulárního automatu. V závìru dokumentu se nachází komunikaèní protokol mezi \czuv{procesory} (zpùsob zasílání zpráv). Pro vizualizaci je vyu¾it sekvenèní diagram.
+\section{Zadání}
+Pomocí knihovny Open MPI implementujte celulární automat, který bude vyu¾ívat paralelního prostøedí pro urychlení výpoètu. Celulární automat bude implementovat pravidla hry \textit{Game of life}.
+\begin{description}
+ \item[Vstup:] Soubor \czuv{lattice} reprezentující møí¾ku automatu a obsahující binární èíslice {0,1}, kde 0 znamená mrtvou a 1 znamená ¾ivou buòku. Èíslice 0 a 1 budou uspoøádány do obdélníkové matice, kde ka¾dý øádek bude zpracováván právì jedním procesorem (navíc mù¾ete pou¾ít jeden øídící/synchronizaèní procesor). Zároveò mù¾ete poèítat s tím, ¾e v¹echny øádky jsou stejnì dlouhé. Následuje pøíklad, jak vypadá soubor \textit{lattice}.
+ Pøíkladem budi¾:
+\begin{verbatim}
+00000000
+00111000
+01110000
+00000000
+\end{verbatim}
+ \item[Výstup:] Na standardní výstup vypi¹te stav matice po po¾adovaném poètu krokù a to tak, ¾e ka¾dému øádku bude pøedcházet id procesoru a dvojteèka. Tento formát je zvolen z toho dùvodu, ¾e procesory budou hodnoty vypisovat v náhodném poøadí (pro seøazení výstupu pou¾ijte utilitu \textit{sort} ve spou¹tìcím skriptu, nezapomeòte vyøe¹it dvoumístná id procesorù) Pøesný formát výstupu je opìt nutno dodr¾et kvùli strojové kontrole výstupu. Za nedodr¾ení budou strhávány body. 
+ Pøíklad výstupu po 3 krocích:
+\begin{verbatim}
+0:00010000
+1:01001000
+2:01001000
+3:00100000
+\end{verbatim}
+\end{description}
+\begin{description}
+ \item[Postup:] Vytvoøte testovací skript se jménem \textit{test} nebo \textit{test.sh}. Skript pøijímá právì jeden parametr a to poèet krokù. Skript spoète poèet øádkù (aby bylo jasné, kolik je tøeba procesorù), pøelo¾í a spustí program s parametrem \textit{pocet\_kroku}. Je vhodné spoèíst i poèet sloupcù a pøedat ho programu kvùli naèítání souboru (ka¾dý procesor si pak mù¾e naèíst vlastní èást souboru hodnot - vlastní øádek). Po naètení (ideálnì paralelnì - ka¾dý procesor svùj øádek) hodnot je proveden zadaný poèet iterací podle pøedaného parametru a nakonec jsou na standardní výstup vypsány øádky jednotlivých procesorù. Vzhledem k tomu, ¾e pou¾ijete utilitu \textit{sort}, øádky budou seøazeny správnì, jak mají být v matici.
+\end{description}
+
+\section{Rozbor a analýza algoritmu}
+Algoritmus Pipeline merge sort pracuje s lineárním  polem procesorù $p(n) = \log n + 1$, kde $n$ je poèet prvkù urèených k seøazení a $+ 1$ znaèí první procesor, který naèítá vstupní data. 
+\begin{description}
+ \item[Základní body algoritmu:]
+\begin{itemize}
+ \item
+ \item Data nejsou ulo¾ena v procesorech, ale postupnì do nich vstupují.
+ \item Ka¾dý procesor spojuje dvì seøazené posloupnosti délky $2^{i-2}$.
+ \item Procesor $P_i$ se spustí, kdy¾ má na jednom vstupu posloupnost délky $2^{i-2}$ a na druhém $1$, tedy zaène $2^{i-2} +1$ cyklù po procesoru $P_{i-1}$.
+ \item $P_i$ zaène v cyklu $$1 + \sum^{i-2}_{j=0} 2^j + 1 = 2^{i-1} + i -1$$.
+ \item $P_i$ skonèí v cyklu $(n-1) + 2^{i-1} + i - 1$.
+ \item Celý algoritmus skonèí po $2n + \log n - 1$ cyklech.
+\end{itemize}
+\end{description}
+
+\subsection*{Rozbor algoritmu}
+Algoritmus Pipeline merge sort pracuje s $\log_2(n) + 1$. Ka¾dý pracovní (vyjma prvního) z procesorù obsahuje dvì fronty s maximální délkou \textit{i}, kde \textit{i} je èíslo procesoru ($i >= 1$). Tedy pro druhý procesor $P_2 = 2$, tøetí $P_3 = 3$, ètvrtý $P_4 = 4$ a tak dále. Algoritmus zaèíná první procesor, který naèítá vstupní èísla a po jednom (bez porovnání) je zasílá druhému procesoru. Ten je ihned pøijímá a støídavì je ukládá do první nebo do druhé fronty. 
+
+Pøi naplnìní front správným poètem prvkù (u $P_{2}1 >= 1$ a $P_{2}2 >= 1$) zaèínají pracovní procesory tøídit data. Porovnávají se dvì èísla, jedno z první fronty, druhé z druhé fronty, a dle zadání se buï men¹í z nich nebo vìt¹í za¹le vedlej¹ímu procesoru. Toto porovnání 2. procesor dìlá pouze jednou, 3. procesor 2x, 4. 4x a tak dále. Ten jej pøijme a takté¾ ukládá do front. Porovnávat zaène pøi splnìní døíve uvedených podmínek. Tímto zpùsobem pracují v¹echny procesory.
+
+Výjimkou je poslední procesor, který pøi naplnìní jedné fronty a druhé o obsahu alespoò jednoho èísla zaèíná porovnávat a výsledek (seøazená èísla) tiskne na standardní výstup. Pøi situaci, kdy má jednu frontu prázdnou, tak druhá obsahuje ji¾ seøazenou posloupnost prvkù, a proto jsou postupnì její prvky bez dal¹ích operací poslány na výstup.
+
+Fronty jednotlivých pracovních procesorù obsahují po seøazení $n$-tice. Ka¾dý dal¹í procesor spojuje/seøazuje posloupnosti (obsah obou front) pøede¹lého procesoru.
+\section{Teoretická slo¾itost algoritmu}
+\begin{description}
+ \item[èasová slo¾itost:] $2n + \log n - 1$ cyklù, kde $n$ je poèet prvkù k seøazení\\tedy \textbf{t($n$) = O($n$)}
+ \item[cena:] $t(n).p(n) = O(n).(\log n + 1)$, kde $p(n)$ je poèet \czuv{procesorù}\\tedy \textbf{c($n$) = O($n*\log n$)}, co¾ je optimální
+\end{description}
+
+\section{Namìøené hodnoty}
+V tabulce \ref{tab1} je zobrazena závislost mezi poètem vstupních prvkù a èasem potøebným k jejich seøazení. Výsledky byly zji¹tìny pøi experimentování s posloupnostmi rùzných délek. Pro ka¾dou hodnotu bylo provedeno 10 mìøení a následnì udìlán prùmìr. Mìøení probíhalo na ¹kolním serveru Merlin pomocí pøíkazu \textit{time} pøi vypnutých výpisech.Do výsledných hodnot není zapoèítáno generování vstupních prvkù pøíkazem \textit{dd}.
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ l | c c c c c c c c c c } 
+%\rowcolor[gray]{0.9}
+\hline
+\textbf{poèet prvkù}	& 2      & 4      & 8      & 16    & 32    & 64    & 128   & 256   & 512   \\
+\textbf{èas[s]}		& 0,066  & 0,105  & 0,145  & 0,171 & 0,176 & 0,186 & 0,205 & 0,324 & 0,386 \\ \hline
+\end{tabular}
+
+\end{center} 
+\begin{center}
+\begin{tabular}{ l | c c c c c c} 
+\hline
+\textbf{poèet prvkù}	& 1024  & 2048  & 4096  & 8192  & 16384 & 32768 \\
+\textbf{èas[s]}		& 0,441 & 0,772 & 1,176 & 2,379 & 4,715 & 4,921 \\ \hline
+\end{tabular}
+\caption{Pøehled namìøených èasù v závislosti na poètu prvkù.}
+\label{tab1}
+\end{center} 
+\end{table}
+
+Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení.
+% \begin{figure}[ht]
+% \begin{center}
+% \includegraphics[scale=.8]{1.pdf}
+% \caption{Závislost mezi poètem prvkù a èasem potøebným k jejich seøazení.}
+%  \label{pic1}
+% \end{center}
+% \end{figure}
+
+\section{Komunikaèní protokol}
+Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Pro zjednodu¹ení a lep¹í pøehlednost je jako vstup pro Pipeline merge sort algoritmu pou¾ito 8 neseøazených èísel. Tedy poèet procesorù je $\log_2(8)+1$ co¾ je 4.
+
+V samotném diagramu jsou pou¾ity následující zkratky: è $->$ èíslo, f $->$ fronta, $<>$ $->$ porovnání dvou èísel.
+\begin{figure}[ht]
+\small\begin{verbatim}
++-------------+           +-------------+            +-------------+            +-------------+
++ 1. Procesor +           + 2. Procesor +            + 3. Procesor +            + 4. Procesor +
++-------------+           +-------------+            +-------------+            +-------------+
+
+       |   1.èíslo do 1.fronty   |                          |                          |
+       |------------------------>|                          |                          |
+       |   2.èíslo do 2.fronty   |                          |                          |
+       |------------------------>|                          |                          |
+       |   3.èíslo do 1.fronty   |   men¹í è. z <> do 1.f   |                          |
+       |------------------------>|------------------------->|                          |
+       |   4.èíslo do 2.fronty   |   zbylé è. z <> do 1.f   |                          |
+       |------------------------>|------------------------->|                          |
+       |   5.èíslo do 1.fronty   |   men¹í è. z <> do 2.f   |                          |
+       |------------------------>|------------------------->|------------------------->|
+       |   6.èíslo do 2.fronty   |   zbylé è. z <> do 2.f   |   men¹í è. z <> do 1.f   |
+       |------------------------>|------------------------->|------------------------->|
+       |   7.èíslo do 1.fronty   |   men¹í è. z <> do 1.f   |   men¹í è. z <> do 1.f   |
+       |------------------------>|------------------------->|------------------------->|
+       |   8.èíslo do 2.fronty   |   zbylé è. z <> do 1.f   |   men¹í è. z <> do 1.f   |
+       |------------------------>|------------------------->|------------------------->|
+       |                         |   men¹í è. z <> do 2.f   |   zbylé è. z <> do 1.f   |
+       |                         |------------------------->|------------------------->|
+       |                         |   zbylé è. z <> do 2.f   |   men¹í è. z <> do 2.f   |
+       |                         |------------------------->|------------------------->|
+       |                         |                          |   men¹í è. z <> do 2.f   |
+       |                         |                          |------------------------->|
+       |                         |                          |   men¹í è. z <> do 2.f   |
+       |                         |                          |------------------------->|
+       |                         |                          |   zbylé è. z <> do 2.f   |
+       |                         |                          |------------------------->|
+\end{verbatim}
+\caption{Pøíklad komunikace 4 procesorù v algoritmu Pipeline merge sort.}
+\label{pic}
+\end{figure}
+
+\normalsize
+\end{document}
