@@ -36,7 +36,7 @@
 \section{Zadání}
 Pomocí knihovny Open MPI implementujte celulární automat, který bude vyu¾ívat paralelního prostøedí pro urychlení výpoètu. Celulární automat bude implementovat pravidla hry \textit{Game of life}.
 \begin{description}
- \item[Vstup:] Soubor \czuv{lattice} reprezentující møí¾ku automatu a obsahující binární èíslice {0,1}, kde 0 znamená mrtvou a 1 znamená ¾ivou buòku. Èíslice 0 a 1 budou uspoøádány do obdélníkové matice, kde ka¾dý øádek bude zpracováván právì jedním procesorem (navíc mù¾ete pou¾ít jeden øídící/synchronizaèní procesor). Zároveò mù¾ete poèítat s tím, ¾e v¹echny øádky jsou stejnì dlouhé. Následuje pøíklad, jak vypadá soubor lattice.
+ \item[Vstup:] Soubor \czuv{lattice} reprezentující møí¾ku automatu a obsahující binární èíslice {0,1}, kde 0 znamená mrtvou a 1 znamená ¾ivou buòku. Èíslice 0 a 1 budou uspoøádány do obdélníkové matice, kde ka¾dý øádek bude zpracováván právì jedním procesorem (navíc mù¾ete pou¾ít jeden øídící/synchronizaèní procesor). Zároveò mù¾ete poèítat s tím, ¾e v¹echny øádky jsou stejnì dlouhé. Následuje pøíklad, jak vypadá soubor \textit{lattice}.
  Pøíkladem budi¾:
 \begin{verbatim}
 00000000
@@ -44,44 +44,78 @@ Pomocí knihovny Open MPI implementujte celulární automat, který bude vyu¾ívat pa
 01110000
 00000000
 \end{verbatim}
- \item[Výstup:] Výstup na \textit{stdout} se skládá ze dvou èástí:
-\begin{itemize}
- \item Jednotlivé naètené hodnoty v jednom øádku oddìlené mezerou (vypsat po naètení prvním procesorem).
- \item Jednotlivé seøazené hodnoty oddìlené novým øádkem (od nejmen¹ího po nejvìt¹í).
-\end{itemize}
+ \item[Výstup:] Na standardní výstup vypi¹te stav matice po po¾adovaném poètu krokù a to tak, ¾e ka¾dému øádku bude pøedcházet id procesoru a dvojteèka. Tento formát je zvolen z toho dùvodu, ¾e procesory budou hodnoty vypisovat v náhodném poøadí (pro seøazení výstupu pou¾ijte utilitu \textit{sort} ve spou¹tìcím skriptu, nezapomeòte vyøe¹it dvoumístná id procesorù) Pøesný formát výstupu je opìt nutno dodr¾et kvùli strojové kontrole výstupu. Za nedodr¾ení budou strhávány body. 
+ Pøíklad výstupu po 3 krocích:
+\begin{verbatim}
+0:00010000
+1:01001000
+2:01001000
+3:00100000
+\end{verbatim}
 \end{description}
 \begin{description}
- \item[Postup:] Vytvoøte testovací skript \textit{test}, který bude øídit testování. Skript bude mít následující vlastnosti:
-\begin{itemize}
- \item Bude pojmenován \textit{test} nebo \textit{test.sh}.
- \item Bude pøijímat 1 parametr a to \textit{pocet\_hodnot}.
-\end{itemize}
- Skript vytvoøí podle velikosti parametru \textit{pocet\_hodnot} soubor \textit{numbers} s náhodnými èísly a následnì spustí program s poètem procesorù \textit{$log_2(pocet\_hodnot)+1$}. Skript nakonec sma¾e vytvoøený binární soubor a soubor \textit{numbers}. Vzhledem ke strojové kontrole výsledkù se v odevzdané verzi kódu nebudou vyskytovat ¾ádné jiné výstupy ne¾ uvedené a ze stejných dùvodù je tøeba dodr¾et vý¹e uvedené body týkající se testovacího skriptu. Za nedodr¾ení tìchto po¾adavkù budou strhávány body.
+ \item[Postup:] Vytvoøte testovací skript se jménem \textit{test} nebo \textit{test.sh}. Skript pøijímá právì jeden parametr a to poèet krokù. Skript spoète poèet øádkù (aby bylo jasné, kolik je tøeba procesorù), pøelo¾í a spustí program s parametrem \textit{pocet\_kroku}. Je vhodné spoèíst i poèet sloupcù a pøedat ho programu kvùli naèítání souboru (ka¾dý procesor si pak mù¾e naèíst vlastní èást souboru hodnot - vlastní øádek). Po naètení (ideálnì paralelnì - ka¾dý procesor svùj øádek) hodnot je proveden zadaný poèet iterací podle pøedaného parametru a nakonec jsou na standardní výstup vypsány øádky jednotlivých procesorù. Vzhledem k tomu, ¾e pou¾ijete utilitu \textit{sort}, øádky budou seøazeny správnì, jak mají být v matici.
 \end{description}
 
 \section{Rozbor a analýza algoritmu}
-Algoritmus Pipeline merge sort pracuje s lineárním  polem procesorù $p(n) = \log n + 1$, kde $n$ je poèet prvkù urèených k seøazení a $+ 1$ znaèí první procesor, který naèítá vstupní data. 
+Algoritmus pracuje s celulárním automate, který implementuje pravidla hry Game of life. Hra pracuje s matici o rozmìrech \textit{N x M}, kde \textit{N} je poèet øádkù a \textit{M} poèet sloupcù. Poèet procesorù, které se podílejí na zpracování hry je urèen na základì  promìnné \textit{N} ($N >= 1$). Tedy ka¾dý øádek je zpracováván jiným CPU. 
 \begin{description}
  \item[Základní body algoritmu:]
 \begin{itemize}
  \item
- \item Data nejsou ulo¾ena v procesorech, ale postupnì do nich vstupují.
- \item Ka¾dý procesor spojuje dvì seøazené posloupnosti délky $2^{i-2}$.
- \item Procesor $P_i$ se spustí, kdy¾ má na jednom vstupu posloupnost délky $2^{i-2}$ a na druhém $1$, tedy zaène $2^{i-2} +1$ cyklù po procesoru $P_{i-1}$.
- \item $P_i$ zaène v cyklu $$1 + \sum^{i-2}_{j=0} 2^j + 1 = 2^{i-1} + i -1$$.
- \item $P_i$ skonèí v cyklu $(n-1) + 2^{i-1} + i - 1$.
- \item Celý algoritmus skonèí po $2n + \log n - 1$ cyklech.
+ \item Ka¾dý procesor uchovává jeden øádek hracího pole.
+ \item V¹echny procesory pracují zároveò.
+ \item Ka¾dý procesor posílá svùj øádek vedlej¹ímu procesoru.
+ \item Ka¾dý procesor pøijímá øádek od vedlej¹ího procesoru.
+ \item V¹echny procesory startují i konèí po stejném kroku.
+ \item Celý algoritmus skonèí po K krocích.
 \end{itemize}
 \end{description}
 
 \subsection*{Rozbor algoritmu}
-Algoritmus Pipeline merge sort pracuje s $\log_2(n) + 1$. Ka¾dý pracovní (vyjma prvního) z procesorù obsahuje dvì fronty s maximální délkou \textit{i}, kde \textit{i} je èíslo procesoru ($i >= 1$). Tedy pro druhý procesor $P_2 = 2$, tøetí $P_3 = 3$, ètvrtý $P_4 = 4$ a tak dále. Algoritmus zaèíná první procesor, který naèítá vstupní èísla a po jednom (bez porovnání) je zasílá druhému procesoru. Ten je ihned pøijímá a støídavì je ukládá do první nebo do druhé fronty. 
+Ka¾dý procesor obsahuje dvì fronty s maximální délkou \textit{M}, kde \textit{M} je délka hracího pole ($M >= 1$). První fronta obsahuje aktuálnì zpracovávaný øádek a druhá slou¾í pro ukládání ji¾ vypoètených nových hodnot jednotlivých bunìk. Pro pøíjem øádku od spodního/vrchního souseda slou¾í dal¹í jedna/dvì pole.
 
-Pøi naplnìní front správným poètem prvkù (u $P_{2}1 >= 1$ a $P_{2}2 >= 1$) zaèínají pracovní procesory tøídit data. Porovnávají se dvì èísla, jedno z první fronty, druhé z druhé fronty, a dle zadání se buï men¹í z nich nebo vìt¹í za¹le vedlej¹ímu procesoru. Toto porovnání 2. procesor dìlá pouze jednou, 3. procesor 2x, 4. 4x a tak dále. Ten jej pøijme a takté¾ ukládá do front. Porovnávat zaène pøi splnìní døíve uvedených podmínek. Tímto zpùsobem pracují v¹echny procesory.
+Implementace pravidel hry je rozdìleno do nìkolika následujících èástí:
+\begin{itemize}
+ \item Prní procesor (1) a poslední procesor (N)
+  \begin{itemize}
+   \item po¹le øádek \textit{[konstantní èas]}
+   \item pøijme øádek \textit{[konstantní èas]}
+   \item zpracování první buòky (3-okolí) \textit{[promìnný èas]}
+   \item zpracování poslední buòky (3-okolí) \textit{[promìnný èas]}
+   \item zpracování zbylých bunìk (5-okolí)
+   \begin{itemize}
+    \item loop(M-2) zpracuj buòku \textit{[promìnný èas]}
+   \end{itemize}
+  \end{itemize}
+ \item Zbylé procesory (2-(N-1)-tý)
+  \begin{itemize}
+   \item po¹le øádek (2x) \textit{[konstantní èas]}
+   \item pøijme øádek (2x) \textit{[konstantní èas]}
+   \item zpracování první buòky (5-okolí) \textit{[promìnný èas]}
+   \item zpracování poslední buòky (5-okolí) \textit{[promìnný èas]}
+   \item zpracování zbylých bunìk (8-okolí)
+   \begin{itemize}
+    \item loop(M-2) zpracuj buòku \textit{[promìnný èas]}
+   \end{itemize}
+  \end{itemize}
+ \item ulo¾ení nového øádku \textit{[konstantní èas]}
+\end{itemize}
+Rozbor celé aplikace je mo¾né vyjádøit pomocí následující odrá¾ek:
+\begin{itemize}
+ \item inicializace \textit{[konstantní èas]}
+ \item naètení dat \textit{[promìnný èas]}
+ \item pravidla hry \textit{[promìnný èas]}
+ \item tisk jednotlivých øádkù po K-krocích \textit{[konstantní èas]}
+ \item úklid \textit{[konstantní èas]}
+\end{itemize}
 
-Výjimkou je poslední procesor, který pøi naplnìní jedné fronty a druhé o obsahu alespoò jednoho èísla zaèíná porovnávat a výsledek (seøazená èísla) tiskne na standardní výstup. Pøi situaci, kdy má jednu frontu prázdnou, tak druhá obsahuje ji¾ seøazenou posloupnost prvkù, a proto jsou postupnì její prvky bez dal¹ích operací poslány na výstup.
-
-Fronty jednotlivých pracovních procesorù obsahují po seøazení $n$-tice. Ka¾dý dal¹í procesor spojuje/seøazuje posloupnosti (obsah obou front) pøede¹lého procesoru.
+Èástí oznaèené \textit{[promìnný èas]} jsou závislé na vstupních hodnotách, naopak èásti \textit{[konstantní èas]} nikoliv. Èas a cena algoritmu závisí na následujících promìnných:
+\begin{itemize}
+ \item poèet krokù
+ \item poèet sloupcù hracího pole
+ \item poèet øádkù hracího pole (ovlivòuje cenu)
+\end{itemize}
 \section{Teoretická slo¾itost algoritmu}
 \begin{description}
  \item[èasová slo¾itost:] $2n + \log n - 1$ cyklù, kde $n$ je poèet prvkù k seøazení\\tedy \textbf{t($n$) = O($n$)}
@@ -121,43 +155,26 @@ Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøe
 % \end{figure}
 
 \section{Komunikaèní protokol}
-Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Pro zjednodu¹ení a lep¹í pøehlednost je jako vstup pro Pipeline merge sort algoritmu pou¾ito 8 neseøazených èísel. Tedy poèet procesorù je $\log_2(8)+1$ co¾ je 4.
+Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Celkový poèet zasílaných zpráv se odvyjí od poètu krokù, které se v algoritmu provedou. To je znázornìné pomocí smyèky \textit{LOOP K}, kde \textit{K} je poèet krokù. Procesory od 2 a¾ po N-1 zasílají 2 zprávy a také 2 zprávy pøijímají. První a poslední procesor, jeliko¾ jsou krajní zasílají i pøijímají pouze zprávu jednu.
 
-V samotném diagramu jsou pou¾ity následující zkratky: è $->$ èíslo, f $->$ fronta, $<>$ $->$ porovnání dvou èísel.
+V oznaèení \czuv{posílá X. øádek} \textit{X} reprezentuje èíslo øádku ze zdrojového soubor (jak øádky tak i procesory jsou èíslovány od 1).
 \begin{figure}[ht]
 \small\begin{verbatim}
-+-------------+           +-------------+            +-------------+            +-------------+
-+ 1. Procesor +           + 2. Procesor +            + 3. Procesor +            + 4. Procesor +
-+-------------+           +-------------+            +-------------+            +-------------+
-
-       |   1.èíslo do 1.fronty   |                          |                          |
-       |------------------------>|                          |                          |
-       |   2.èíslo do 2.fronty   |                          |                          |
-       |------------------------>|                          |                          |
-       |   3.èíslo do 1.fronty   |   men¹í è. z <> do 1.f   |                          |
-       |------------------------>|------------------------->|                          |
-       |   4.èíslo do 2.fronty   |   zbylé è. z <> do 1.f   |                          |
-       |------------------------>|------------------------->|                          |
-       |   5.èíslo do 1.fronty   |   men¹í è. z <> do 2.f   |                          |
-       |------------------------>|------------------------->|------------------------->|
-       |   6.èíslo do 2.fronty   |   zbylé è. z <> do 2.f   |   men¹í è. z <> do 1.f   |
-       |------------------------>|------------------------->|------------------------->|
-       |   7.èíslo do 1.fronty   |   men¹í è. z <> do 1.f   |   men¹í è. z <> do 1.f   |
-       |------------------------>|------------------------->|------------------------->|
-       |   8.èíslo do 2.fronty   |   zbylé è. z <> do 1.f   |   men¹í è. z <> do 1.f   |
-       |------------------------>|------------------------->|------------------------->|
-       |                         |   men¹í è. z <> do 2.f   |   zbylé è. z <> do 1.f   |
-       |                         |------------------------->|------------------------->|
-       |                         |   zbylé è. z <> do 2.f   |   men¹í è. z <> do 2.f   |
-       |                         |------------------------->|------------------------->|
-       |                         |                          |   men¹í è. z <> do 2.f   |
-       |                         |                          |------------------------->|
-       |                         |                          |   men¹í è. z <> do 2.f   |
-       |                         |                          |------------------------->|
-       |                         |                          |   zbylé è. z <> do 2.f   |
-       |                         |                          |------------------------->|
+ +-------------+      +-------------+      +-------------+       +---------------+      +-------------+
+ + 1. Procesor +      + 2. Procesor +      + 3. Procesor +  ...  + N-1. Procesor +      + N. Procesor +
+ +-------------+      +-------------+      +-------------+       +---------------+      +-------------+
+        |                    |                    |                     |                     |
++------------------------------------------------------------------------------------------------------+
+| LOOP K |                   |                    |                     |                     |        |
++--------+                   |                    |                     |                     |        |
+|       |   posílá 1.øádek   |   posílá 2.øádek   |         ...         |   posílá N-1.øádek  |        |
+|       |------------------->|------------------->|-------------------->|-------------------->|        |
+|       |   posílá 2.øádek   |   posílá 3.øádek   |         ...         |   posílá N.øádek    |        |
+|       |<-------------------|<-------------------|<--------------------|<--------------------|        |
+|       |                    |                    |                     |                     |        |
++------------------------------------------------------------------------------------------------------+
 \end{verbatim}
-\caption{Pøíklad komunikace 4 procesorù v algoritmu Pipeline merge sort.}
+\caption{Pøíklad komunikace N procesorù v paralelním celulárním automatu.}
 \label{pic}
 \end{figure}
 
