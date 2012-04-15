@@ -117,9 +117,10 @@ Rozbor celé aplikace je mo¾né vyjádøit pomocí následující odrá¾ek:
  \item poèet øádkù hracího pole (ovlivòuje cenu)
 \end{itemize}
 \section{Slo¾itost algoritmu}
+Prostorová slo¾itost se odvyjí od velikosti vstupní matice. Uva¾ujeme-li matici $N x M$ ($N$ øádky, $M$ sloupce) pak $p(n) = N$, jeliko¾ ka¾dý øádek je naèten a zpracováván právì jedním procesorem. Èasová slo¾itost výpoètu je ovlivnìna jak vstupní maticí, pøesnìji poètem sloupcù $M$ a poètem prùchodù $S$, neboli poètem krokù hry. Tedy èasovou slo¾itost lze vyjádøit jako souèin poètu sloupcù a poèet krokù ve høe.
 \begin{description}
- \item[èasová slo¾itost:] $2n + \log n - 1$ cyklù, kde $n$ je poèet prvkù k seøazení\\tedy \textbf{t($n$) = O($n$)}
- \item[cena:] $t(n).p(n) = O(n).(\log n + 1)$, kde $p(n)$ je poèet \czuv{procesorù}\\tedy \textbf{c($n$) = O($n*\log n$)}, co¾ je optimální
+ \item[èasová slo¾itost:] \textbf{t($n$) = O($S * M$)}, co¾ je tøída slo¾itosti \textbf{O($n$)}
+ \item[cena:] $t(n).p(n)$, tedy \textbf{c($n$) = O($N * S * M$)}
 \end{description}
 
 \section{Namìøené hodnoty}

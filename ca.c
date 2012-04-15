@@ -53,12 +53,11 @@ char liveDead(char cell, int live) {
 }
 
 int main(int argc, char *argv[]) {
-/*   double startT, endT;
+   double startT, endT;
    startT = MPI_Wtime();
-   */
    int numprocs;                                                  /* pocet procesoru */
    int myid;                                                      /* muj rank */
-   int column;                                                    /* pocet sloupcu */
+   unsigned int column;                                           /* pocet sloupcu */
    int step;                                                      /* pocet kroku provadenych v algoritmu */
    char *row;                                                     /* jeden radek hraci desky */
    char *rowNew;                                                  /* nove vytvoreny radek, pomocne pole */
@@ -88,14 +87,14 @@ int main(int argc, char *argv[]) {
    }
 
    /* Alokace pole o velikosti jednoho radku */
-   if((row = (char *) malloc(sizeof(char) * column)) == NULL ) {
+   if((row = (char *) malloc(sizeof(row) * column)) == NULL ) {
       perror("CHYBA: Nepovedla se alokace pole o velikosti jednoho radku.");
       fclose(file);
       return -1;
    }
 
    /* Alokace pole o velikosti jednoho radku - pro zalohu noveho radku */
-   if((rowNew = (char *) malloc(sizeof(char) * column)) == NULL ) {
+   if((rowNew = (char *) malloc(sizeof(rowNew) * column)) == NULL ) {
       perror("CHYBA: Nepovedla se alokace pole o velikosti jednoho radku.");
       fclose(file);
       return -1;
@@ -103,7 +102,7 @@ int main(int argc, char *argv[]) {
 
    /* Alokace pole o velikosti jednoho radku - pro vrchni radek */
    if(myid != 0) {
-      if((rowUp = (char *) malloc(sizeof(char) * column)) == NULL ) {
+      if((rowUp = (char *) malloc(sizeof(rowUp) * column)) == NULL ) {
          perror("CHYBA: Nepovedla se alokace pole o velikosti jednoho radku.");
          fclose(file);
          return -1;
@@ -112,7 +111,7 @@ int main(int argc, char *argv[]) {
 
    /* Alokace pole o velikosti jednoho radku - pro spodni radek radek */
    if(myid != lastId) {
-      if((rowDown = (char *) malloc(sizeof(char) * column)) == NULL ) {
+      if((rowDown = (char *) malloc(sizeof(rowDown) * column)) == NULL ) {
          perror("CHYBA: Nepovedla se alokace pole o velikosti jednoho radku.");
          fclose(file);
          return -1;
@@ -120,7 +119,7 @@ int main(int argc, char *argv[]) {
    }
 
    /* Vymazani alokavona pameti */
-   int i;
+   unsigned int i;
 /*   memset(row, '\0', column);
    memset(rowNew, '\0', column);
    if (myid != 0)
@@ -158,16 +157,19 @@ int main(int argc, char *argv[]) {
       return -1;
    }
 
+   if(fclose(file) == EOF) {                                      /* uzavreni souboru */
+      perror("CHYBA: Nepovedlo se korektne uzavrit soubor.");
+   }
+
    /* Algortimus hry Game Of Life */
    int actStep;                                                   /* aktualni krok algoritmu */
-   int dead = 0;                                                  /* pocet mrtvych bunek v okoli */
    int live = 0;                                                  /* pocet zivych bunek v okoli */
    for(actStep = 0; actStep < step; actStep++) {                  /* provadim tolik kroku, kolik bylo zadano na vstupu */
       if(myid == 0) {                                             /* prvni radek, rozhoduje se jen podle spodniho */
          MPI_Send(row, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD);              /* posilam pole dolu */
-        // printf("id(%d)->(%d):%s\n", myid, myid+1, row);
+/* printf("id(%d)->(%d):%s\n", myid, myid+1, row); */
          MPI_Recv(rowDown, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD, &stat);   /* prijimam pole ze spodu */
-        // printf("id(%d)<-(%d):%s\n", myid, myid+1, rowDown);
+/* printf("id(%d)<-(%d):%s\n", myid, myid+1, rowDown); */
          /* reseni pro prvni bunku, prvniho radku*/
          if(row[1] == LIVE) live++;                               /* prava bunak je ziva */
          if(rowDown[1] == LIVE) live++;                           /* prava spodni bunka je ziva */
@@ -192,9 +194,9 @@ int main(int argc, char *argv[]) {
       }
       else if(myid == lastId) {                                 /* posledni radek, roshoduje se jen podle predchoziho */
          MPI_Send(row, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD);              /* posilam pole nahoru */
-        // printf("id(%d)->(%d):%s\n", myid, myid-1, row);
+/* printf("id(%d)->(%d):%s\n", myid, myid-1, row); */
          MPI_Recv(rowUp, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD, &stat);     /* prijimam pole z vrchu */
-        // printf("id(%d)<-(%d):%s\n", myid, myid-1, rowUp);
+/* printf("id(%d)<-(%d):%s\n", myid, myid-1, rowUp); */
          /* reseni pro prvni bunku, prvniho radku*/
          if(row[1] == LIVE) live++;                               /* prava bunak je ziva */
          if(rowUp[1] == LIVE) live++;                             /* prava vrchni bunka je ziva */
@@ -219,13 +221,13 @@ int main(int argc, char *argv[]) {
       }
       else {                                                      /* zbyle radky, maji vrchniho i spodniho souseda */
          MPI_Send(row, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD);              /* posilam pole dolu */
-        // printf("id(%d)->(%d):%s\n", myid, myid+1, row);
+/* printf("id(%d)->(%d):%s\n", myid, myid+1, row); */
          MPI_Send(row, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD);              /* posilam pole nahoru */
-        // printf("id(%d)->(%d):%s\n", myid, myid-1, row);
+/* printf("id(%d)->(%d):%s\n", myid, myid-1, row); */
          MPI_Recv(rowUp, column, MPI_CHAR, myid+1, TAG, MPI_COMM_WORLD, &stat);     /* prijimam pole ze spodu */
-        // printf("id(%d)<-(%d):%s\n", myid, myid+1, rowUp);
+/* printf("id(%d)<-(%d):%s\n", myid, myid+1, rowUp); */
          MPI_Recv(rowDown, column, MPI_CHAR, myid-1, TAG, MPI_COMM_WORLD, &stat);   /* prijimam pole z vrchu */
-        // printf("id(%d)<-(%d):%s\n", myid, myid-1, rowDown);
+/* printf("id(%d)<-(%d):%s\n", myid, myid-1, rowDown); */
          /* prvni bunka - jen prave 5 okoli */
          if(rowUp[0] == LIVE) live++;                             /* vrchni bunka je ziva */
          if(rowUp[1] == LIVE) live++;                             /* prava vrchni bunak je ziva */
@@ -260,7 +262,7 @@ int main(int argc, char *argv[]) {
    }
 
    /* Tisk hodnot po danem kroku na vystup */
-   printf("%d:%s\n", myid, row);
+   /*printf("%d:%s\n", myid, row);*/
 
    /* uklizeni po sobe */
    free(row);                                                     /* uvolenni dynamicke pameti */
@@ -271,13 +273,10 @@ int main(int argc, char *argv[]) {
    if(myid != lastId) {
       free(rowDown);                                              /* uvolenni dynamicke pameti */
    }
-   if(fclose(file) == EOF) {                                      /* uzavreni souboru */
-      perror("CHYBA: Nepovedlo se korektnr uzavrit soubor.");
-   }
-/*   endT = MPI_Wtime();
+   endT = MPI_Wtime();
    printf("(%d)start=%f, end=%f,  result=%f\n",myid, startT, endT, endT-startT);
-*/
    MPI_Finalize(); 
    return 0;
 
- }//main
+ }
+
