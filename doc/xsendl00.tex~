@@ -58,7 +58,7 @@ Pomocí knihovny Open MPI implementujte celulární automat, který bude vyu¾ívat pa
 \end{description}
 
 \section{Rozbor a analýza algoritmu}
-Algoritmus pracuje s celulárním automate, který implementuje pravidla hry Game of life. Hra pracuje s matici o rozmìrech \textit{N x M}, kde \textit{N} je poèet øádkù a \textit{M} poèet sloupcù. Poèet procesorù, které se podílejí na zpracování hry je urèen na základì  promìnné \textit{N} ($N >= 1$). Tedy ka¾dý øádek je zpracováván jiným CPU. 
+Algoritmus pracuje s celulárním automatem, který implementuje pravidla hry Game of life. Hra pracuje s matici o rozmìrech \textit{N x M}, kde \textit{N} je poèet øádkù a \textit{M} poèet sloupcù. Poèet procesorù, které se podílejí na zpracování hry je urèen na základì  promìnné \textit{N} ($N >= 1$). Tedy ka¾dý øádek je zpracováván jiným CPU. 
 \begin{description}
  \item[Základní body algoritmu:]
 \begin{itemize}
@@ -75,7 +75,7 @@ Algoritmus pracuje s celulárním automate, který implementuje pravidla hry Game o
 \subsection*{Rozbor algoritmu}
 Ka¾dý procesor obsahuje dvì fronty s maximální délkou \textit{M}, kde \textit{M} je délka hracího pole ($M >= 1$). První fronta obsahuje aktuálnì zpracovávaný øádek a druhá slou¾í pro ukládání ji¾ vypoètených nových hodnot jednotlivých bunìk. Pro pøíjem øádku od spodního/vrchního souseda slou¾í dal¹í jedna/dvì pole.
 
-Implementace pravidel hry je rozdìleno do nìkolika následujících èástí:
+Implementace pravidel hry je rozdìlena do nìkolika následujících èástí:
 \begin{itemize}
  \item Prní procesor (1) a poslední procesor (N)
   \begin{itemize}
@@ -127,14 +127,14 @@ Prostorová slo¾itost se odvyjí od velikosti vstupní matice. Uva¾ujeme-li matici 
 V tabulce \ref{tab1} je zobrazena závislost mezi poètem sloupcù ve vstupní matici a èasem potøebným k jejich seøazení. Hodnoty jsou mìøeny na matici o 8 øádcích a je provedeno 100 krokù (1.øádek tabulky) a 1000 krokù (2. øádek tabulky). Pro ka¾dou hodnotu bylo provedeno 10 mìøení a následnì udìlán prùmìr. Mìøení probíhalo na ¹kolním serveru Merlin pomocí upraveného kódu celulárního automatu. Na zaèátek byla pøidána startovací promìnná a na konec procesu ukonèovací.  Experimentování probíhalo pøi vypnutých výpisech. Na obrázku \ref{mat} je ukázána poèáteèní a druhá vstupní matice, která se v ka¾dém následujícím kroku znásobovala.
 \begin{figure}[ht]
 \begin{verbatim}
-000000	000000000000
-000000	000000000000
-000000	000000000000
-001110	001110001110
-011110	011110011110 ...
-000000	000000000000
-000000	000000000000
-000000	000000000000
+000000	000000000000 000000000000000000000000
+000000	000000000000 000000000000000000000000
+000000	000000000000 000000000000000000000000
+001110	001110001110 001110001110001110001110
+011110	011110011110 011110011110011110011110 ...
+000000	000000000000 000000000000000000000000
+000000	000000000000 000000000000000000000000
+000000	000000000000 000000000000000000000000
 \end{verbatim}
 \caption{Poèáteèní a druhá vstupní matice.}
  \label{mat}
@@ -145,23 +145,24 @@ V tabulce \ref{tab1} je zobrazena závislost mezi poètem sloupcù ve vstupní matic
 %\rowcolor[gray]{0.9}
 \hline
 \textbf{poèet sloupcù}	& 6      & 12     & 24     & 48    & 96    & 192   & 384   & 768   & 1536  & 3072  & 6144  \\
-\textbf{èas[s] (100x)}	& 1,066  & 1,304  & 1,189  & 1,654 & 1,136 & 1,086 & 1,153 & 1,317 & 1,211 & 1,221 & 1,111 \\
-\textbf{èas[s] (1000x)}	& 1,266  & 1,405  & 1,195  & 1,171 & 1,176 & 1,484 & 1,390 & 1,309 & 1,296 & 1,285 & 1,228 \\ \hline
+\textbf{èas[s] (100x)}	& 1,066  & 1,104  & 1,089  & 1,134 & 1,136 & 1,156 & 1,183 & 1,217 & 1,251 & 1,321 & 1,311 \\
+\textbf{èas[s] (1000x)}	& 1,102  & 1,150  & 1,165  & 1,171 & 1,176 & 1,25  & 1,301 & 1,309 & 1,296 & 1,306 & 1,328 \\ \hline
 \end{tabular}
 \caption{Pøehled namìøených èasù v závislosti na poètu prvkù a krokù.}
 \label{tab1}
 \end{center} 
 \end{table}
 
-Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení. Je zde vyneseno dvakrát jedenáct hodnot. X-osa pou¾ívá logaritmické mìøítko, Y-osa je v lineární. Z grafu je patrné, ¾e namìøené hodnoty pøímo neodpovídají pøedpokladu. Jsou zde men¹í výchylky, které mohou být zpùsobeny re¾ií.	
+Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení. Je zde vyneseno dvakrát jedenáct hodnot. X-osa pou¾ívá logaritmické mìøítko, Y-osa je v lineární. Z grafu je patrné, ¾e namìøené hodnoty pøímo neodpovídají pøedpokladu. Jsou zde men¹í odchylky, které mohou být zpùsobeny re¾ií. I pøes vý¹e uvedené nepøesnosti jsou oba grafy lineární, a tím je potvrzena teoretická slo¾itost, která byla urèena v pøede¹lé èásti.
  \begin{figure}[ht]
  \begin{center}
  \includegraphics[scale=.8]{graf.pdf}
- \caption{Závislost mezi poètem prvkù a èasem potøebným k jejich seøazení.}
+ \caption{Závislost mezi poètem sloupcù, krokù a èasem.}
   \label{pic1}
  \end{center}
 \end{figure}
 
+\newpage
 \section{Komunikaèní protokol}
 Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Celkový poèet zasílaných zpráv se odvyjí od poètu krokù, které se v algoritmu provedou. To je znázornìné pomocí smyèky \textit{LOOP K}, kde \textit{K} je poèet krokù. Procesory od 2 a¾ po N-1 zasílají 2 zprávy a také 2 zprávy pøijímají. První a poslední procesor, jeliko¾ jsou krajní zasílají i pøijímají pouze zprávu jednu.
 

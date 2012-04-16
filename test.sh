@@ -6,6 +6,13 @@ else
     step=$1;                                                                           # pocet kroku
 fi;
 
+if [ -e "lattice" ];then
+   soubor=lattice
+else
+   echo "Soubor lattice neexsituje"
+   exit
+
+fi;
 row=`wc -l < lattice`
 row=$((--row))
 column=`wc -L < lattice`

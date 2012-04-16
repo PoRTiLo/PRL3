@@ -153,7 +153,7 @@ V tabulce \ref{tab1} je zobrazena závislost mezi poètem sloupcù ve vstupní matic
 \end{center} 
 \end{table}
 
-Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení. Je zde vyneseno dvakrát jedenáct hodnot 
+Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení. Je zde vyneseno dvakrát jedenáct hodnot. X-osa pou¾ívá logaritmické mìøítko, Y-osa je v lineární. Z grafu je patrné, ¾e namìøené hodnoty pøímo neodpovídají pøedpokladu. Jsou zde men¹í výchylky, které mohou být zpùsobeny re¾ií.	
  \begin{figure}[ht]
  \begin{center}
  \includegraphics[scale=.8]{graf.pdf}
@@ -162,6 +162,7 @@ Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøe
  \end{center}
 \end{figure}
 
+\newpage
 \section{Komunikaèní protokol}
 Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Celkový poèet zasílaných zpráv se odvyjí od poètu krokù, které se v algoritmu provedou. To je znázornìné pomocí smyèky \textit{LOOP K}, kde \textit{K} je poèet krokù. Procesory od 2 a¾ po N-1 zasílají 2 zprávy a také 2 zprávy pøijímají. První a poslední procesor, jeliko¾ jsou krajní zasílají i pøijímají pouze zprávu jednu.
 
