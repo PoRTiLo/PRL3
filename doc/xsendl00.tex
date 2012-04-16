@@ -124,37 +124,45 @@ Prostorová slo¾itost se odvyjí od velikosti vstupní matice. Uva¾ujeme-li matici 
 \end{description}
 
 \section{Namìøené hodnoty}
-V tabulce \ref{tab1} je zobrazena závislost mezi poètem vstupních prvkù a èasem potøebným k jejich seøazení. Výsledky byly zji¹tìny pøi experimentování s posloupnostmi rùzných délek. Pro ka¾dou hodnotu bylo provedeno 10 mìøení a následnì udìlán prùmìr. Mìøení probíhalo na ¹kolním serveru Merlin pomocí pøíkazu \textit{time} pøi vypnutých výpisech.Do výsledných hodnot není zapoèítáno generování vstupních prvkù pøíkazem \textit{dd}.
+V tabulce \ref{tab1} je zobrazena závislost mezi poètem sloupcù ve vstupní matici a èasem potøebným k jejich seøazení. Hodnoty jsou mìøeny na matici o 8 øádcích a je provedeno 100 krokù (1.øádek tabulky) a 1000 krokù (2. øádek tabulky). Pro ka¾dou hodnotu bylo provedeno 10 mìøení a následnì udìlán prùmìr. Mìøení probíhalo na ¹kolním serveru Merlin pomocí upraveného kódu celulárního automatu. Na zaèátek byla pøidána startovací promìnná a na konec procesu ukonèovací.  Experimentování probíhalo pøi vypnutých výpisech. Na obrázku \ref{mat} je ukázána poèáteèní a druhá vstupní matice, která se v ka¾dém následujícím kroku znásobovala.
+\begin{figure}[ht]
+\begin{verbatim}
+000000	000000000000
+000000	000000000000
+000000	000000000000
+001110	001110001110
+011110	011110011110 ...
+000000	000000000000
+000000	000000000000
+000000	000000000000
+\end{verbatim}
+\caption{Poèáteèní a druhá vstupní matice.}
+ \label{mat}
+\end{figure}
 \begin{table}[ht]
 \begin{center}
-\begin{tabular}{ l | c c c c c c c c c c } 
+\begin{tabular}{ l | c c c c c c c c c c c c} 
 %\rowcolor[gray]{0.9}
 \hline
-\textbf{poèet prvkù}	& 2      & 4      & 8      & 16    & 32    & 64    & 128   & 256   & 512   \\
-\textbf{èas[s]}		& 0,066  & 0,105  & 0,145  & 0,171 & 0,176 & 0,186 & 0,205 & 0,324 & 0,386 \\ \hline
+\textbf{poèet sloupcù}	& 6      & 12     & 24     & 48    & 96    & 192   & 384   & 768   & 1536  & 3072  & 6144  \\
+\textbf{èas[s] (100x)}	& 1,066  & 1,304  & 1,189  & 1,654 & 1,136 & 1,086 & 1,153 & 1,317 & 1,211 & 1,221 & 1,111 \\
+\textbf{èas[s] (1000x)}	& 1,266  & 1,405  & 1,195  & 1,171 & 1,176 & 1,484 & 1,390 & 1,309 & 1,296 & 1,285 & 1,228 \\ \hline
 \end{tabular}
-
-\end{center} 
-\begin{center}
-\begin{tabular}{ l | c c c c c c} 
-\hline
-\textbf{poèet prvkù}	& 1024  & 2048  & 4096  & 8192  & 16384 & 32768 \\
-\textbf{èas[s]}		& 0,441 & 0,772 & 1,176 & 2,379 & 4,715 & 4,921 \\ \hline
-\end{tabular}
-\caption{Pøehled namìøených èasù v závislosti na poètu prvkù.}
+\caption{Pøehled namìøených èasù v závislosti na poètu prvkù a krokù.}
 \label{tab1}
 \end{center} 
 \end{table}
 
-Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení.
-% \begin{figure}[ht]
-% \begin{center}
-% \includegraphics[scale=.8]{1.pdf}
-% \caption{Závislost mezi poètem prvkù a èasem potøebným k jejich seøazení.}
-%  \label{pic1}
-% \end{center}
-% \end{figure}
+Na obrázku \ref{pic} je graficky znázornìn vztah mezi poètem prvkù a èasem potøebným k jejich seøazení. Je zde vyneseno dvakrát jedenáct hodnot. X-osa pou¾ívá logaritmické mìøítko, Y-osa je v lineární. Z grafu je patrné, ¾e namìøené hodnoty pøímo neodpovídají pøedpokladu. Jsou zde men¹í výchylky, které mohou být zpùsobeny re¾ií.	
+ \begin{figure}[ht]
+ \begin{center}
+ \includegraphics[scale=.8]{graf.pdf}
+ \caption{Závislost mezi poètem prvkù a èasem potøebným k jejich seøazení.}
+  \label{pic1}
+ \end{center}
+\end{figure}
 
+\newpage
 \section{Komunikaèní protokol}
 Na obrázku \ref{pic} zobrazeném ní¾e je pomocí sekvenèního diagramu znázornìna komunikace mezi jednotlivými procesory. Celkový poèet zasílaných zpráv se odvyjí od poètu krokù, které se v algoritmu provedou. To je znázornìné pomocí smyèky \textit{LOOP K}, kde \textit{K} je poèet krokù. Procesory od 2 a¾ po N-1 zasílají 2 zprávy a také 2 zprávy pøijímají. První a poslední procesor, jeliko¾ jsou krajní zasílají i pøijímají pouze zprávu jednu.
 

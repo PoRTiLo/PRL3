@@ -53,8 +53,6 @@ char liveDead(char cell, int live) {
 }
 
 int main(int argc, char *argv[]) {
-   double startT, endT;
-   startT = MPI_Wtime();
    int numprocs;                                                  /* pocet procesoru */
    int myid;                                                      /* muj rank */
    unsigned int column;                                           /* pocet sloupcu */
@@ -120,13 +118,6 @@ int main(int argc, char *argv[]) {
 
    /* Vymazani alokavona pameti */
    unsigned int i;
-/*   memset(row, '\0', column);
-   memset(rowNew, '\0', column);
-   if (myid != 0)
-      memset(rowUp, '\0', column);
-   if(myid != lastId)
-      memset(rowDown, '\0', column);
-      */
    for(i = 0; i <= column; i++) {
       row[i] = '\0';
       rowNew[i] = '\0';
@@ -262,7 +253,7 @@ int main(int argc, char *argv[]) {
    }
 
    /* Tisk hodnot po danem kroku na vystup */
-   /*printf("%d:%s\n", myid, row);*/
+   printf("%d:%s\n", myid, row);
 
    /* uklizeni po sobe */
    free(row);                                                     /* uvolenni dynamicke pameti */
@@ -273,8 +264,6 @@ int main(int argc, char *argv[]) {
    if(myid != lastId) {
       free(rowDown);                                              /* uvolenni dynamicke pameti */
    }
-   endT = MPI_Wtime();
-   printf("(%d)start=%f, end=%f,  result=%f\n",myid, startT, endT, endT-startT);
    MPI_Finalize(); 
    return 0;
 
